@@ -19,9 +19,7 @@
     [shapes.core :as shapes]
     ))
 
-(defonce state (atom {:input "[
-(circle 10)
-(cell (interval 100 inc))]"}))
+(defonce state (atom {:input "(cell \n (circle @(cell (interval 100 inc)))) "}))
 
 (defn eval [s cb]
   (cljs/eval-str
