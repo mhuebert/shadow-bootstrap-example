@@ -5,34 +5,42 @@
     [cljs.tools.reader.reader-types :as rt]
     [cljs.tools.reader :as r]
 
-
     ;; evaluate
     [cljs.js :as cljs]
     [shadow.bootstrap :as boot]
-    [cljs.env :as env]
 
     ;; view
     [re-view.core :as v :refer [defview]]
-    [re-db.d :as d]))
+    [lark.value-viewer.core :as views]))
 
-(defview layout []
-         [:div
-          "Hello"])
+(defonce state (atom {}))
+
+(defonce _
+         (boot/init #(swap! state assoc :ready true)))
+
+(defn eval [s cb]
+  (cljs/eval-str
+    boot/compile-state-ref
+    s
+    "[test]"
+    {:eval cljs/js-eval
+     :load boot/load}
+    cb))
+
+(defview layout [{:keys [view/state]}]
+  (if-not (:ready @state)
+    [:div "Loading..."]
+    [:div
+     [:textarea.ba.b--gray.bw2.pa3.pre-wrap.ma3 {:value     (:input @state)
+                                                 :on-change #(let [input (.. % -target -value)]
+                                                               (swap! state assoc :input input)
+                                                               (eval input (fn [{:keys [value error]}]
+                                                                             (swap! state assoc :result (if error [:div "Error: " (str error)]
+                                                                                                                  value)))))}]
+
+     [:.pre-wrap.pa3.bg--near-white.ma3 (views/format-value (:result @state))]]))
 
 (defn render []
-  (v/render-to-dom (layout) "shadow-eval"))
+  (v/render-to-dom (layout {:view/state state}) "shadow-eval"))
 
-(comment (defn compile-it []
-           (cljs/eval-str
-             boot/compile-state-ref
-             "(ns my.user (:require [re-view.core :as v :refer [defview]]))
-              (doall (for [n (range 10)] n))
-              (map inc [1 2 3])"
-             "[test]"
-             {:eval
-                    (fn [{:keys [source cache lang name]}]
-                      (js/console.log "Eval" name lang {:cache  (some-> cache (str) (subs 0 20))
-                                                        :source (some-> source (subs 0 150))})
-                      (js/eval source))
-              :load boot/load}
-             print-result)))
+

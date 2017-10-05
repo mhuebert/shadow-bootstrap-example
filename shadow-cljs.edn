@@ -1,21 +1,21 @@
-{:dependencies [[re-view "0.3.32-SNAPSHOT"]]
+{:dependencies [[re-view "0.3.32-SNAPSHOT"]
+                [lark/value-viewer "0.1.2-SNAPSHOT"]]
  :source-paths ["src"]
  :builds       {:browser {:target     :browser
                           :output-dir "out/public/js"
                           :asset-path "/js"
                           :modules    {:base {:entries [shadow-eval.core]}}
                           :bootstrap-options
-                                      {:entries [shadow-eval.core]
-                                       :macros  [re-view.core]}
+                                      {:entries [re-view.core]}
                           :devtools
                                       {:http-root  "out/public"
                                        :http-port  8701
                                        :after-load shadow-eval.core/render}
-                          :js-options        {:resolve {"react"       {:target :global
-                                                                       :global "React"}
-                                                        "react-dom"   {:target :global
-                                                                       :global "ReactDOM"}
-                                                        "codemirror"  {:target :global
-                                                                       :global "CodeMirror"}
-                                                        "markdown-it" {:target :global
-                                                                       :global "markdownit"}}}}}} }
+                          :js-options {:resolve {"react"       {:target :global
+                                                                :global "React"}
+                                                 "react-dom"   {:target :global
+                                                                :global "ReactDOM"}
+                                                 "codemirror"  {:target :global
+                                                                :global "CodeMirror"}
+                                                 "markdown-it" {:target :global
+                                                                :global "markdownit"}}}}}} }

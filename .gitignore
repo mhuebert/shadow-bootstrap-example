@@ -1,2 +1,7 @@
 target
 .idea
+node_modules
+out/public/js/bootstrap
+out/public/js/cljs-runtime
+out/public/js/base.js
+out/public/js/manifest.json
