@@ -3,21 +3,31 @@
                 [lark/cells "0.1.5-SNAPSHOT"]
                 [maria/shapes "0.1.0-SNAPSHOT"]]
  :source-paths ["src"]
- :builds       {:browser {:target     :browser
-                          :output-dir "out/public/js"
-                          :asset-path "/js"
-                          :modules    {:base {:entries [shadow-eval.core]}}
-                          :bootstrap-options
-                                      {:entries [shadow-eval.user]}
-                          :devtools
-                                      {:http-root  "out/public"
-                                       :http-port  8701
-                                       :after-load shadow-eval.core/render}
-                          :js-options {:resolve {"react"       {:target :global
-                                                                :global "React"}
-                                                 "react-dom"   {:target :global
-                                                                :global "ReactDOM"}
-                                                 "codemirror"  {:target :global
-                                                                :global "CodeMirror"}
-                                                 "markdown-it" {:target :global
-                                                                :global "markdownit"}}}}}} }
+
+ :builds       {:bootstrap {:target     :bootstrap
+                            :output-dir "out/public/js/bootstrap"
+                            :entries    [shadow-eval.user]
+                            :js-options {:resolve {"react"       {:target :global
+                                                                  :global "React"}
+                                                   "react-dom"   {:target :global
+                                                                  :global "ReactDOM"}
+                                                   "codemirror"  {:target :global
+                                                                  :global "CodeMirror"}
+                                                   "markdown-it" {:target :global
+                                                                  :global "markdownit"}}}}
+                :browser   {:target     :browser
+                            :output-dir "out/public/js"
+                            :asset-path "/js"
+                            :modules    {:base {:entries [shadow-eval.core]}}
+                            :devtools
+                                        {:http-root  "out/public"
+                                         :http-port  8702
+                                         :after-load shadow-eval.core/render}
+                            :js-options {:resolve {"react"       {:target :global
+                                                                  :global "React"}
+                                                   "react-dom"   {:target :global
+                                                                  :global "ReactDOM"}
+                                                   "codemirror"  {:target :global
+                                                                  :global "CodeMirror"}
+                                                   "markdown-it" {:target :global
+                                                                  :global "markdownit"}}}}}} }

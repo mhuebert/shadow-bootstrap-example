@@ -7,7 +7,7 @@
 
     ;; evaluate
     [cljs.js :as cljs]
-    [shadow.bootstrap :as boot]
+    [shadow.cljs.bootstrap.browser :as boot]
 
     ;; view
     [re-view.core :as v :refer [defview]]
@@ -19,24 +19,32 @@
     [shapes.core :as shapes]
     ))
 
-(defonce state (atom {:input "(cell \n (circle @(cell (interval 100 inc)))) "}))
+(defonce c-state (cljs/empty-state))
 
-(defn eval [s cb]
+(defonce state (atom {:input "[\n(circle 10)\n(for [n (range)] n)\n(cell  \n (circle @(cell (interval 100 inc))))]"}))
+
+(defn eval-str [source cb]
   (cljs/eval-str
-    boot/compile-state-ref
-    s
+    c-state
+    source
     "[test]"
     {:eval cljs/js-eval
-     :load (fn [& args]
-             (prn :load args)
-             (apply boot/load args))
+     :load boot/load
      :ns   (symbol "shadow-eval.user")}
     cb))
 
+(defn eval-to-page [source]
+  (eval-str source (fn [{:keys [value error]}]
+                     (swap! state assoc :result (if error [:div "Error: " (str error)]
+                                                          value)))))
+
 (defonce _
-         (boot/init
-           #(eval (str '(require '[shadow-eval.user :include-macros true]))
-                  (fn [] (swap! state assoc :ready true)))))
+         (boot/init c-state
+                    {:path "/js/bootstrap"
+                     :load-on-init '#{shadow-eval.user}}
+                    (fn []
+                      (swap! state assoc :ready true)
+                      (eval-to-page (:input @state)))))
 
 
 (defview layout [{:keys [view/state]}]
@@ -46,16 +54,12 @@
      [:textarea.ba.b--gray.bw2.pa3.pre-wrap.ma3 {:value     (:input @state)
                                                  :on-change #(let [input (.. % -target -value)]
                                                                (swap! state assoc :input input)
-                                                               (eval input (fn [{:keys [value error]}]
-                                                                             (swap! state assoc :result (if error [:div "Error: " (str error)]
-                                                                                                                  value)))))}]
+                                                               (eval-to-page input))}]
 
      [:.pre-wrap.pa3.bg--near-white.ma3 (views/format-value (:result @state))]]))
 
 (defn render []
   (v/render-to-dom (layout {:view/state state}) "shadow-eval"))
-
-
 
 (extend-type cells.cell/Cell
   cells.cell/ICellStore
