@@ -7,6 +7,7 @@
  :builds       {:bootstrap {:target     :bootstrap
                             :output-dir "out/public/js/bootstrap"
                             :entries    [shadow-eval.user]
+                            :exclude    [cljs.js]
                             :js-options {:resolve {"react"       {:target :global
                                                                   :global "React"}
                                                    "react-dom"   {:target :global
