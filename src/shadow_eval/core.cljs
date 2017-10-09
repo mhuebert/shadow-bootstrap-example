@@ -37,7 +37,7 @@
     source
     "[test]"
     {:eval cljs/js-eval
-     :load boot/load
+     :load (partial boot/load c-state)
      :ns   (symbol "shadow-eval.user")}
     cb))
 
