@@ -21,7 +21,7 @@
 
 (defonce c-state (cljs/empty-state))
 
-(defonce state (atom {:input "[\n(circle 10)\n(for [n (range)] n)\n(cell  \n (circle @(cell (interval 100 inc))))]"}))
+(defonce state (atom {:input "[10\n (circle 10)\n (cell 10)\n (defcell x 10)]"}))
 
 (defn eval-str [source cb]
   (cljs/eval-str
