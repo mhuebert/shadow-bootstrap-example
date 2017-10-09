@@ -1,10 +1,6 @@
 (ns shadow-eval.core
   (:require
 
-    ;; read
-    [cljs.tools.reader.reader-types :as rt]
-    [cljs.tools.reader :as r]
-
     ;; evaluate
     [cljs.js :as cljs]
     [shadow.cljs.bootstrap.browser :as boot]
@@ -12,17 +8,28 @@
     ;; view
     [re-view.core :as v :refer [defview]]
     [re-view-hiccup.core :refer [element]]
+
+
+    ;; things to eval and display
     [lark.value-viewer.core :as views]
     [re-db.d :as d]
     [re-db.patterns :as patterns]
-
     [cells.cell :as cell]
     [shapes.core :as shapes]
-    ))
+
+    [clojure.string :as string]))
+
+
+;; Source text to eval
+
+(def source-examples ["(circle 40)"
+                      "(for [n (range 10)] n)"
+                      "(defcell x 10)"
+                      "(cell (interval 100 inc))"])
+
+;; Set up eval environment
 
 (defonce c-state (cljs/empty-state))
-
-(defonce state (atom {:input "[(circle 40)\n (for [n (range 10)] n)\n (defcell x 10)]"}))
 
 (defn eval-str [source cb]
   (cljs/eval-str
@@ -34,39 +41,62 @@
      :ns   (symbol "shadow-eval.user")}
     cb))
 
-(defn eval-to-page [source]
-  (eval-str source #(swap! state assoc :result %)))
+;; Views
 
-(defonce _
-         (boot/init c-state
-                    {:path         "/js/bootstrap"
-                     :load-on-init '#{shadow-eval.user}}
-                    (fn []
-                      (swap! state assoc :ready true)
-                      (eval-to-page (:input @state)))))
+(defview show-example
+  "Shows a single example, with an editable textarea and value-view."
+  {:key                (fn [_ source] source)
+   :view/initial-state (fn [_ source]
+                         {:source source})
+   :view/did-mount     (fn [this source]
+                         (eval-str source (partial swap! (:view/state this) assoc :result)))}
+  [{:keys [view/state]}]
+  (let [{:keys [source result]} @state]
+    [:.ma3
+     [:.bg-near-white.pa3
+      [:textarea.bn.pre-wrap.w-100.f6.lh-copy.bg-near-white.outline-0.monospace
+       {:value     (:source @state)
+        :style     {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source)))) "rem")}
+        :on-change #(let [source (.. % -target -value)]
+                      (swap! state assoc :source source)
+                      (eval-str source (partial swap! state assoc :result)))}]]
 
-(defview layout [{:keys [view/state]}]
-  (if-not (:ready @state)
-    [:div "Loading..."]
-    [:div
-     [:textarea.ba.b--gray.bw2.pa3.pre-wrap.ma3 {:value     (:input @state)
-                                                 :style     {:width  300
-                                                             :height 150}
-                                                 :on-change #(let [input (.. % -target -value)]
-                                                               (swap! state assoc :input input)
-                                                               (eval-to-page input))}]
-
-     (let [{:keys [error value]} (:result @state)]
+     (let [{:keys [error value]} result]
        [:.pre-wrap
         (if error (element [:.bg-pink.pa3
                             [:.b (ex-message error)]
                             [:div (str (ex-data error))]
                             (pr-str (ex-cause error))
                             ])
-                  [:.bg-near-white.pa3 (views/format-value value)])])]))
+                  [:.pa3 (views/format-value value)])])]))
+
+(defview examples
+  "Root view for the page"
+  []
+  (if-not (d/get ::eval-state :ready?)
+    "Loading..."
+    [:.monospace.f6
+     {:style {:width 400}}
+     (map show-example source-examples)]))
+
+(defonce _
+         (boot/init c-state
+                    {:path         "/js/bootstrap"
+                     :load-on-init '#{shadow-eval.user}}
+                    (fn []
+                      (d/transact! [[:db/add ::eval-state :ready? true]]))))
 
 (defn render []
-  (v/render-to-dom (layout {:view/state state}) "shadow-eval"))
+  (v/render-to-dom (examples) "shadow-eval"))
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocol extensions to enable rendering of cells and shapes
 
 (extend-type cells.cell/Cell
   cells.cell/ICellStore
