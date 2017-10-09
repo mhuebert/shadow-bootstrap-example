@@ -22,7 +22,7 @@
 
 (defonce c-state (cljs/empty-state))
 
-(defonce state (atom {:input "[10\n (circle 10)\n (defcell x 10)]"}))
+(defonce state (atom {:input "[(circle 40)\n (for [n (range)] n)\n (defcell x 10)]"}))
 
 (defn eval-str [source cb]
   (cljs/eval-str
@@ -50,6 +50,8 @@
     [:div "Loading..."]
     [:div
      [:textarea.ba.b--gray.bw2.pa3.pre-wrap.ma3 {:value     (:input @state)
+                                                 :style     {:width  300
+                                                             :height 150}
                                                  :on-change #(let [input (.. % -target -value)]
                                                                (swap! state assoc :input input)
                                                                (eval-to-page input))}]
@@ -61,7 +63,7 @@
                             [:div (str (ex-data error))]
                             (pr-str (ex-cause error))
                             ])
-                  [:.bg-near-white.pa3 (views/format-value (:result @state))])])]))
+                  [:.bg-near-white.pa3 (views/format-value value)])])]))
 
 (defn render []
   (v/render-to-dom (layout {:view/state state}) "shadow-eval"))
