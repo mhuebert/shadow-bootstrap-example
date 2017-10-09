@@ -35,7 +35,7 @@
 
 (defn eval-to-page [source]
   (eval-str source (fn [{:keys [value error]}]
-                     (throw error)
+                     (when error (throw error))
                      (swap! state assoc :result (if error [:div "Error: " (str error)]
                                                           value)))))
 
