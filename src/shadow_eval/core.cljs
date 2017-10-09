@@ -11,6 +11,7 @@
 
     ;; view
     [re-view.core :as v :refer [defview]]
+    [re-view-hiccup.core :refer [element]]
     [lark.value-viewer.core :as views]
     [re-db.d :as d]
     [re-db.patterns :as patterns]
@@ -21,7 +22,7 @@
 
 (defonce c-state (cljs/empty-state))
 
-(defonce state (atom {:input "[10\n (circle 10)\n (cell 10)\n (defcell x 10)]"}))
+(defonce state (atom {:input "[10\n (circle 10)\n (defcell x 10)]"}))
 
 (defn eval-str [source cb]
   (cljs/eval-str
@@ -34,19 +35,15 @@
     cb))
 
 (defn eval-to-page [source]
-  (eval-str source (fn [{:keys [value error]}]
-                     (when error (throw error))
-                     (swap! state assoc :result (if error [:div "Error: " (str error)]
-                                                          value)))))
+  (eval-str source #(swap! state assoc :result %)))
 
 (defonce _
          (boot/init c-state
-                    {:path "/js/bootstrap"
+                    {:path         "/js/bootstrap"
                      :load-on-init '#{shadow-eval.user}}
                     (fn []
                       (swap! state assoc :ready true)
                       (eval-to-page (:input @state)))))
-
 
 (defview layout [{:keys [view/state]}]
   (if-not (:ready @state)
@@ -57,7 +54,14 @@
                                                                (swap! state assoc :input input)
                                                                (eval-to-page input))}]
 
-     [:.pre-wrap.pa3.bg--near-white.ma3 (views/format-value (:result @state))]]))
+     (let [{:keys [error value]} (:result @state)]
+       [:.pre-wrap
+        (if error (element [:.bg-pink.pa3
+                            [:.b (ex-message error)]
+                            [:div (str (ex-data error))]
+                            (pr-str (ex-cause error))
+                            ])
+                  [:.bg-near-white.pa3 (views/format-value (:result @state))])])]))
 
 (defn render []
   (v/render-to-dom (layout {:view/state state}) "shadow-eval"))
