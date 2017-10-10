@@ -25,7 +25,8 @@
 (def source-examples ["(circle 40)"
                       "(for [n (range 10)] n)"
                       "(defcell x 10)"
-                      "(cell (interval 100 inc))"])
+                      "(cell (interval 100 inc))"
+                      "(require 'cljs.js)"])
 
 ;; Set up eval environment
 
@@ -82,7 +83,7 @@
 (defonce _
          (boot/init c-state
                     {:path         "/js/bootstrap"
-                     :load-on-init '#{shadow-eval.user}}
+                     :load-on-init '#{shadow-eval.user }}
                     (fn []
                       (d/transact! [[:db/add ::eval-state :ready? true]]))))
 
