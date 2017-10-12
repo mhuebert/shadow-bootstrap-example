@@ -22,13 +22,11 @@
 
 ;; Source text to eval
 
-(def source-examples ["(ns my.app (:require [cljs.js :as cljs]))"
-                      "(require 'cljs.js)"
-                      "(fn? cljs.js/eval-str)"
-                      "(circle 40)"
+(def source-examples ["(circle 40)"
                       "(for [n (range 10)] n)"
                       "(defcell x 10)"
-                      "(cell (interval 100 inc))"])
+                      "(cell (interval 100 inc))"
+                      "(require '[cljs.js :as cljs])\n\n(fn? cljs/eval-str)"])
 
 ;; Set up eval environment
 
