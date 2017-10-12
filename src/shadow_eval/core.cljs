@@ -22,11 +22,13 @@
 
 ;; Source text to eval
 
-(def source-examples ["(circle 40)"
+(def source-examples ["(ns my.app (:require [cljs.js :as cljs]))"
+                      "(require 'cljs.js)"
+                      "(fn? cljs.js/eval-str)"
+                      "(circle 40)"
                       "(for [n (range 10)] n)"
                       "(defcell x 10)"
-                      "(cell (interval 100 inc))"
-                      "(require 'cljs.js)"])
+                      "(cell (interval 100 inc))"])
 
 ;; Set up eval environment
 
@@ -53,9 +55,10 @@
                          (eval-str source (partial swap! (:view/state this) assoc :result)))}
   [{:keys [view/state]}]
   (let [{:keys [source result]} @state]
-    [:.ma3
-     [:.bg-near-white.pa3
-      [:textarea.bn.pre-wrap.w-100.f6.lh-copy.bg-near-white.outline-0.monospace
+    [:.ma3.flex
+     [:.bg-near-white.pa3.flex-none
+      {:style {:width 450}}
+      [:textarea.bn.pre.w-100.f6.lh-copy.bg-near-white.outline-0.monospace.overflow-auto
        {:value     (:source @state)
         :style     {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source)))) "rem")}
         :on-change #(let [source (.. % -target -value)]
@@ -64,7 +67,7 @@
 
      (let [{:keys [error value]} result]
        [:.pre-wrap
-        (if error (element [:.bg-pink.pa3
+        (if error (element [:.pa3.bg-washed-red
                             [:.b (ex-message error)]
                             [:div (str (ex-data error))]
                             (pr-str (ex-cause error))
@@ -77,7 +80,6 @@
   (if-not (d/get ::eval-state :ready?)
     "Loading..."
     [:.monospace.f6
-     {:style {:width 400}}
      (map show-example source-examples)]))
 
 (defonce _
@@ -89,11 +91,6 @@
 
 (defn render []
   (v/render-to-dom (examples) "shadow-eval"))
-
-
-
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
