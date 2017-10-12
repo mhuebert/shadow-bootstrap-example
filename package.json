@@ -1,5 +1,5 @@
 { "scripts": {
-  "deploy": "gh-pages -d out/public -b gh-pages"
+  "deploy": "gh-pages -d out/public --branch gh-pages"
 },
   "dependencies": {
     "gh-pages": "^1.0.0",
