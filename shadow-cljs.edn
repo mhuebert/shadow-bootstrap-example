@@ -1,4 +1,4 @@
-{:dependencies [[thheller/shadow-cljs "2.0.10"]
+{:dependencies [[thheller/shadow-cljs "2.0.11"]
                 [re-view "0.3.33"]
                 [lark/value-viewer "0.1.2"]
                 [lark/cells "0.1.5"]
