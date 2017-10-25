@@ -1,5 +1,5 @@
 (ns shadow-eval.user
-  (:require re-view-hiccup.core
+  (:require re-view.hiccup.core
             [cells.cell :refer [cell]]
             [cells.lib :as cell
              :refer [interval timeout fetch geo-location with-view]
@@ -14,5 +14,8 @@
                                             ;; are these internal only? -jar
                                             assure-shape-seq shape-bounds bounds shape->vector]]
             [re-view.core :include-macros true]
+            #_[thi.ng.geom.svg.core :as svg]
+
             [cljs.js])
-  (:require-macros [cells.cell :refer [defcell cell]]))
+  (:require-macros [cells.cell :refer [defcell cell]]
+                   #_[shadow-eval.a]))

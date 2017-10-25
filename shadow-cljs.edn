@@ -1,19 +1,19 @@
-{:dependencies [[thheller/shadow-cljs "2.0.11"]
-                [re-view "0.3.33"]
-                [lark/value-viewer "0.1.2"]
+{:dependencies [[re-view "0.4.6"]
                 [lark/cells "0.1.5"]
-                [maria/shapes "0.1.0"]]
+                [lark/tools "0.1.19"]
+                [maria/shapes "0.1.0"]
+                [thi.ng/geom "0.0.908"]]
  :source-paths ["src"]
  :nrepl        {:port 8703}
  :builds       {:bootstrap {:target     :bootstrap
                             :output-dir "out/public/js/bootstrap"
                             :entries    [shadow-eval.user]
                             :exclude    #{cljs.js}}
-                :browser   {:target     :browser
-                            :output-dir "out/public/js"
-                            :asset-path "/js"
+                :browser   {:target           :browser
+                            :output-dir       "out/public/js"
+                            :asset-path       "/js"
                             :compiler-options {:optimizations :simple}
-                            :modules    {:base {:entries [shadow-eval.core]}}
-                            :devtools   {:http-root  "out/public"
-                                         :http-port  8702
-                                         :after-load shadow-eval.core/render}}}}
+                            :modules          {:base {:entries [shadow-eval.core]}}
+                            :devtools         {:http-root  "out/public"
+                                               :http-port  8702
+                                               :after-load shadow-eval.core/render}}}}

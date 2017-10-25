@@ -7,7 +7,7 @@
 
     ;; view
     [re-view.core :as v :refer [defview]]
-    [re-view-hiccup.core :refer [element]]
+    [re-view.hiccup.core :refer [element]]
 
 
     ;; things to eval and display
@@ -16,6 +16,7 @@
     [re-db.patterns :as patterns]
     [cells.cell :as cell]
     [shapes.core :as shapes]
+    [thi.ng.geom.svg.core :as svg]
 
     [clojure.string :as string]))
 
@@ -110,9 +111,9 @@
   (view [this] (@this)))
 
 (extend-type shapes/Shape
-  re-view-hiccup.core/IEmitHiccup
+  re-view.hiccup.core/IEmitHiccup
   (to-hiccup [this] (shapes/to-hiccup this)))
 
 (extend-protocol cells.cell/IRenderHiccup
   object
-  (render-hiccup [this] (re-view-hiccup.core/element this)))
+  (render-hiccup [this] (re-view.hiccup.core/element this)))
