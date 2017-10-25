@@ -17,5 +17,4 @@
             #_[thi.ng.geom.svg.core :as svg]
 
             [cljs.js])
-  (:require-macros [cells.cell :refer [defcell cell]]
-                   #_[shadow-eval.a]))
+  (:require-macros [cells.cell :refer [defcell cell]]))
