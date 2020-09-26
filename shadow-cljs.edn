@@ -3,7 +3,8 @@
  :dev-http {8702 "out/public"}
  :builds {:bootstrap {:target :bootstrap
                       :output-dir "out/public/js/bootstrap"
-                      :entries [shadow-eval.user
+                      :entries [reagent.core
+                                cljs.js
                                 macro-example.core]
 
                       ;; many macro namespaces can't be evaluated in ClojureScript -

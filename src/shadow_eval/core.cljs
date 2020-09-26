@@ -3,40 +3,33 @@
 
     ;; evaluate
     [cljs.js :as cljs]
-    [shadow.cljs.bootstrap.browser :as boot]
+    [shadow.cljs.bootstrap.browser :as shadow.bootstrap]
 
     ;; view
     [reagent.dom :as rdom]
     [reagent.core :as r]))
-
-(defn counter []
-  (let [i (r/atom 0)
-        interval (js/setInterval #(swap! i inc) 1000)]
-    (reagent.ratom/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))
-    (fn [] [:div @i])))
 
 ;; Source text to eval
 (def source-examples ["(for [n (range 10)] n)"
                       "(defn greeting [name] (str \"hello, \" name))\n[greeting \"fido\"]"
                       "(require '[reagent.core :as r] '[reagent.ratom :as ra])\n\n(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))\n[counter]"
                       "(require '[cljs.js :as cljs])\n\n(str (fn? cljs/eval-str))"
-                      "(require-macros '[macro-example.core :as macros])\n\n(macros/current-ns-str)"
-                      ])
+                      "(require '[macro-example.core :as macros])\n\n[:b (macros/current-ns-str)]"])
 
 ;; Set up eval environment
-
 (defonce c-state (cljs/empty-state))
 (defonce !eval-ready? (r/atom false))
-(keys (get-in @c-state [:cljs.analyzer/namespaces 'macro-example.core$macros]))
+
 (defn eval-str [source cb]
   (cljs/eval-str
     c-state
     source
     "[test]"
     {:eval cljs/js-eval
-     :load (partial boot/load c-state)
-     :ns   (symbol "shadow-eval.user")}
-    #(do (prn :evaluated %) (cb %))))
+     ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
+     ;; index.transit.json file to map namespaces to files.
+     :load (partial shadow.bootstrap/load c-state)}
+    cb))
 
 ;; Views
 
@@ -77,8 +70,8 @@
   (rdom/render [examples] (js/document.getElementById "shadow-eval")))
 
 (defn ^:dev/after-load init []
-  (boot/init c-state
-             {:path "/js/bootstrap"
+  (shadow.bootstrap/init c-state
+                         {:path "/js/bootstrap"
               :load-on-init '#{shadow-eval.user}}
-             #(reset! !eval-ready? true))
+                         #(reset! !eval-ready? true))
   (render))
