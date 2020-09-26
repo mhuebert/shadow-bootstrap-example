@@ -6,17 +6,12 @@
     [shadow.cljs.bootstrap.browser :as boot]
 
     ;; view
-    [re-view.core :as v :refer [defview]]
-    [re-view.hiccup.core :refer [element]]
+    [chia.view :as v]
 
 
     ;; things to eval and display
-    [lark.value-viewer.core :as views]
-    [re-db.d :as d]
-    [re-db.patterns :as patterns]
     [cells.cell :as cell]
     [shapes.core :as shapes]
-    [thi.ng.geom.svg.core :as svg]
 
     [clojure.string :as string]))
 
@@ -32,6 +27,7 @@
 ;; Set up eval environment
 
 (defonce c-state (cljs/empty-state))
+(defonce !eval-ready? (r/atom false))
 
 (defn eval-str [source cb]
   (cljs/eval-str
@@ -45,75 +41,72 @@
 
 ;; Views
 
-(defview show-example
+(v/defn show-example
   "Shows a single example, with an editable textarea and value-view."
-  {:key                (fn [_ source] source)
-   :view/initial-state (fn [_ source]
-                         {:source source})
-   :view/did-mount     (fn [this source]
-                         (eval-str source (partial swap! (:view/state this) assoc :result)))}
-  [{:keys [view/state]}]
-  (let [{:keys [source result]} @state]
-    [:.ma3.flex
-     [:.bg-near-white.pa3.flex-none
-      {:style {:width 450}}
-      [:textarea.bn.pre.w-100.f6.lh-copy.bg-near-white.outline-0.monospace.overflow-auto
-       {:value     (:source @state)
-        :style     {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source)))) "rem")}
-        :on-change #(let [source (.. % -target -value)]
-                      (swap! state assoc :source source)
-                      (eval-str source (partial swap! state assoc :result)))}]]
+  [source]
+  (r/with-let [!state (r/atom {:source source})
+               _ (eval-str source (partial swap! !state assoc :result))]
+    (let [{:keys [source result]} @!state]
+      [:.ma3.flex
+       [:.bg-near-white.pa3.flex-none
+        {:style {:width 450}}
+        [:textarea.bn.pre.w-100.f6.lh-copy.bg-near-white.outline-0.monospace.overflow-auto
+         {:value (:source @!state)
+          :style {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source)))) "rem")}
+          :on-change #(let [source (.. % -target -value)]
+                        (swap! !state assoc :source source)
+                        (eval-str source (partial swap! !state assoc :result)))}]]
 
-     (let [{:keys [error value]} result]
-       [:.pre-wrap
-        (if error (element [:.pa3.bg-washed-red
-                            [:.b (ex-message error)]
-                            [:div (str (ex-data error))]
-                            (pr-str (ex-cause error))
-                            ])
-                  [:.pa3 (views/format-value value)])])]))
+       (let [{:keys [error value]} result]
+         [:.pre-wrap
+          (if error [:.pa3.bg-washed-red
+                     [:.b (ex-message error)]
+                     [:div (str (ex-data error))]
+                     (pr-str (ex-cause error))]
+                    [:.pa3 (str value)])])])))
 
-(defview examples
+(v/defn examples
   "Root view for the page"
   []
-  (if-not (d/get ::eval-state :ready?)
+  (if-not @!eval-ready?
     "Loading..."
-    [:.monospace.f6
-     (map show-example source-examples)]))
+    (into [:.monospace.f6]
+          (map show-example source-examples))))
 
-(defonce _
-         (boot/init c-state
-                    {:path         "/js/bootstrap"
-                     :load-on-init '#{shadow-eval.user }}
-                    (fn []
-                      (d/transact! [[:db/add ::eval-state :ready? true]]))))
+(defn ^:dev/after-load init []
+  (boot/init c-state
+             {:path "/js/bootstrap"
+              :load-on-init '#{shadow-eval.user}}
+             #(reset! !eval-ready? true)))
 
 (defn render []
-  (v/render-to-dom (examples) "shadow-eval"))
+  (v/render-to-dom (examples)
+                   (js/document.getElementById "shadow-eval")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Protocol extensions to enable rendering of cells and shapes
 
-(extend-type cells.cell/Cell
-  cells.cell/ICellStore
-  (put-value! [this value]
-    (d/transact! [[:db/add :cells (name this) value]]))
-  (get-value [this]
-    (d/get :cells (name this)))
-  (invalidate! [this]
-    (patterns/invalidate! d/*db* :ea_ [:cells (name this)]))
-  lark.value-viewer.core/IView
-  (view [this] (cells.cell/view this)))
+(comment
+  (extend-type cells.cell/Cell
+    cells.cell/ICellStore
+    (put-value! [this value]
+      (d/transact! [[:db/add :cells (name this) value]]))
+    (get-value [this]
+      (d/get :cells (name this)))
+    (invalidate! [this]
+      (patterns/invalidate! d/*db* :ea_ [:cells (name this)]))
+    lark.value-viewer.core/IView
+    (view [this] (cells.cell/view this)))
 
-(extend-protocol lark.value-viewer.core/IView
-  Var
-  (view [this] (@this)))
+  (extend-protocol lark.value-viewer.core/IView
+    Var
+    (view [this] (@this)))
 
-(extend-type shapes/Shape
-  re-view.hiccup.core/IEmitHiccup
-  (to-hiccup [this] (shapes/to-hiccup this)))
+  (extend-type shapes/Shape
+    re-view.hiccup.core/IEmitHiccup
+    (to-hiccup [this] (shapes/to-hiccup this)))
 
-(extend-protocol cells.cell/IRenderHiccup
-  object
-  (render-hiccup [this] (re-view.hiccup.core/element this)))
+  (extend-protocol cells.cell/IRenderHiccup
+    object
+    (render-hiccup [this] (re-view.hiccup.core/element this))))

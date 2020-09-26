@@ -1,0 +1,8 @@
+{:deps
+ {thheller/shadow-cljs {:mvn/version "2.11.4"}
+  maria/shapes {:git/url "https://github.com/mhuebert/maria"
+                :sha "69d76a309bcc090c2609528268f56e1596e7d351"
+                :deps/root "shapes"}
+  maria/cells {:git/url "https://github.com/mhuebert/maria"
+               :sha "69d76a309bcc090c2609528268f56e1596e7d351"
+               :deps/root "cells"}}}
