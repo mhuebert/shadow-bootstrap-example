@@ -6,29 +6,28 @@
     [shadow.cljs.bootstrap.browser :as boot]
 
     ;; view
-    [chia.view :as v]
+    [reagent.dom :as rdom]
+    [reagent.core :as r]))
 
-
-    ;; things to eval and display
-    [cells.cell :as cell]
-    [shapes.core :as shapes]
-
-    [clojure.string :as string]))
-
+(defn counter []
+  (let [i (r/atom 0)
+        interval (js/setInterval #(swap! i inc) 1000)]
+    (reagent.ratom/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))
+    (fn [] [:div @i])))
 
 ;; Source text to eval
-
-(def source-examples ["(circle 40)"
-                      "(for [n (range 10)] n)"
-                      "(defcell x 10)"
-                      "(cell (interval 100 inc))"
-                      "(require '[cljs.js :as cljs])\n\n(fn? cljs/eval-str)"])
+(def source-examples ["(for [n (range 10)] n)"
+                      "(defn greeting [name] (str \"hello, \" name))\n[greeting \"fido\"]"
+                      "(require '[reagent.core :as r] '[reagent.ratom :as ra])\n\n(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))\n[counter]"
+                      "(require '[cljs.js :as cljs])\n\n(str (fn? cljs/eval-str))"
+                      "(require-macros '[macro-example.core :as macros])\n\n(macros/current-ns-str)"
+                      ])
 
 ;; Set up eval environment
 
 (defonce c-state (cljs/empty-state))
 (defonce !eval-ready? (r/atom false))
-
+(keys (get-in @c-state [:cljs.analyzer/namespaces 'macro-example.core$macros]))
 (defn eval-str [source cb]
   (cljs/eval-str
     c-state
@@ -37,18 +36,18 @@
     {:eval cljs/js-eval
      :load (partial boot/load c-state)
      :ns   (symbol "shadow-eval.user")}
-    cb))
+    #(do (prn :evaluated %) (cb %))))
 
 ;; Views
 
-(v/defn show-example
+(defn show-example
   "Shows a single example, with an editable textarea and value-view."
   [source]
   (r/with-let [!state (r/atom {:source source})
                _ (eval-str source (partial swap! !state assoc :result))]
     (let [{:keys [source result]} @!state]
-      [:.ma3.flex
-       [:.bg-near-white.pa3.flex-none
+      [:div.ma3.flex
+       [:div.bg-near-white.pa3.flex-none
         {:style {:width 450}}
         [:textarea.bn.pre.w-100.f6.lh-copy.bg-near-white.outline-0.monospace.overflow-auto
          {:value (:source @!state)
@@ -58,55 +57,28 @@
                         (eval-str source (partial swap! !state assoc :result)))}]]
 
        (let [{:keys [error value]} result]
-         [:.pre-wrap
-          (if error [:.pa3.bg-washed-red
-                     [:.b (ex-message error)]
+         [:div.pre-wrap
+          (if error [:div.pa3.bg-washed-red
+                     [:div.b (ex-message error)]
                      [:div (str (ex-data error))]
                      (pr-str (ex-cause error))]
-                    [:.pa3 (str value)])])])))
+                    [:div.pa3 value])])])))
 
-(v/defn examples
+(defn examples
   "Root view for the page"
   []
-  (if-not @!eval-ready?
-    "Loading..."
-    (into [:.monospace.f6]
-          (map show-example source-examples))))
+  (if @!eval-ready?
+    (into [:div.monospace.f6]
+          (for [source source-examples]
+            ^{:key source} [show-example source]))
+    "Loading..."))
+
+(defn render []
+  (rdom/render [examples] (js/document.getElementById "shadow-eval")))
 
 (defn ^:dev/after-load init []
   (boot/init c-state
              {:path "/js/bootstrap"
               :load-on-init '#{shadow-eval.user}}
-             #(reset! !eval-ready? true)))
-
-(defn render []
-  (v/render-to-dom (examples)
-                   (js/document.getElementById "shadow-eval")))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Protocol extensions to enable rendering of cells and shapes
-
-(comment
-  (extend-type cells.cell/Cell
-    cells.cell/ICellStore
-    (put-value! [this value]
-      (d/transact! [[:db/add :cells (name this) value]]))
-    (get-value [this]
-      (d/get :cells (name this)))
-    (invalidate! [this]
-      (patterns/invalidate! d/*db* :ea_ [:cells (name this)]))
-    lark.value-viewer.core/IView
-    (view [this] (cells.cell/view this)))
-
-  (extend-protocol lark.value-viewer.core/IView
-    Var
-    (view [this] (@this)))
-
-  (extend-type shapes/Shape
-    re-view.hiccup.core/IEmitHiccup
-    (to-hiccup [this] (shapes/to-hiccup this)))
-
-  (extend-protocol cells.cell/IRenderHiccup
-    object
-    (render-hiccup [this] (re-view.hiccup.core/element this))))
+             #(reset! !eval-ready? true))
+  (render))
