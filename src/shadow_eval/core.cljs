@@ -11,9 +11,7 @@
 
 ;; Source text to eval
 (def source-examples
-  ["
-  (require '[userland.macros :as macros])
-  (macros/current-ns-str)"
+  [
    "^:hiccup [:b \"hello, world.\"]"
    "(for [n (range 10)] n)"
    "(defn greeting [name] (str \"hello, \" name))"
@@ -21,8 +19,14 @@
    "(require '[reagent.core :as r] '[reagent.ratom :as ra])"
    "(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))"
    "^:hiccup [counter]"
-   "(require '[cljs.js :as cljs])\n\n(fn? cljs/eval-str)"
+   "(require '[cljs.js :as cljs])\n(fn? cljs/eval-str)"
 
+   "(require '[userland.macros :as macros])
+  (macros/current-ns-str)"
+   "(require-macros '[userland.macros-2 :as m2-macros])\n(m2-macros/no-op 2)"
+   "(require '[userland.macros-2 :as m2])\n(m2/no-op 2)"
+
+   ";; will not work, macros-3 is missing self-require\n(require-macros '[userland.macros-3 :as m3])\n(m3/no-op 3)"
    ])
 
 ;; Set up eval environment
