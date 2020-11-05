@@ -5,7 +5,7 @@
                       :output-dir "out/public/js/bootstrap"
                       :entries [reagent.core
                                 cljs.js
-                                macro-example.core]
+                                userland.macros]
 
                       ;; many macro namespaces can't be evaluated in ClojureScript -
                       ;; so we exclude them here to avoid runtime errors. Note that

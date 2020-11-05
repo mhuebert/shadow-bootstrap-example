@@ -10,11 +10,20 @@
     [reagent.core :as r]))
 
 ;; Source text to eval
-(def source-examples ["(for [n (range 10)] n)"
-                      "(defn greeting [name] (str \"hello, \" name))\n[greeting \"fido\"]"
-                      "(require '[reagent.core :as r] '[reagent.ratom :as ra])\n\n(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))\n[counter]"
-                      "(require '[cljs.js :as cljs])\n\n(str (fn? cljs/eval-str))"
-                      "(require '[macro-example.core :as macros])\n\n[:b (macros/current-ns-str)]"])
+(def source-examples
+  ["
+  (require '[userland.macros :as macros])
+  (macros/current-ns-str)"
+   "^:hiccup [:b \"hello, world.\"]"
+   "(for [n (range 10)] n)"
+   "(defn greeting [name] (str \"hello, \" name))"
+   "^:hiccup [greeting \"fido\"]"
+   "(require '[reagent.core :as r] '[reagent.ratom :as ra])"
+   "(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))"
+   "^:hiccup [counter]"
+   "(require '[cljs.js :as cljs])\n\n(fn? cljs/eval-str)"
+
+   ])
 
 ;; Set up eval environment
 (defonce c-state (cljs/empty-state))
@@ -28,7 +37,8 @@
     {:eval cljs/js-eval
      ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
      ;; index.transit.json file to map namespaces to files.
-     :load (partial shadow.bootstrap/load c-state)}
+     :load (partial shadow.bootstrap/load c-state)
+     :context :expr}
     cb))
 
 ;; Views
@@ -51,11 +61,17 @@
 
        (let [{:keys [error value]} result]
          [:div.pre-wrap
-          (if error [:div.pa3.bg-washed-red
-                     [:div.b (ex-message error)]
-                     [:div (str (ex-data error))]
-                     (pr-str (ex-cause error))]
-                    [:div.pa3 value])])])))
+          (if error
+            (do
+              (js/console.error (ex-cause error))
+              [:div.pa3.bg-washed-red
+               [:div.b (ex-message error)]
+               [:div (str (ex-data error))]
+               (pr-str (ex-cause error))])
+            [:div.pa3
+             (if (and (vector? value) (:hiccup (meta value)))
+               value
+               (pr-str value))])])])))
 
 (defn examples
   "Root view for the page"
