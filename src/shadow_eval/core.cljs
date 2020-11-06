@@ -12,6 +12,20 @@
 ;; Source text to eval
 (def source-examples
   [
+   ;; macro testing
+
+   "(require-macros '[userland.macros-2 :as m2-macros])
+    (m2-macros/no-op 2)"
+
+   "(require '[userland.both :as b])
+    (b/hello 1)"
+
+   "(require '[userland.macros :as macros])
+  (macros/current-ns-str)"
+
+   "(require '[reagent.core :as r])
+    (r/with-let [a 1] a)"]
+  #_[
    "^:hiccup [:b \"hello, world.\"]"
    "(for [n (range 10)] n)"
    "(defn greeting [name] (str \"hello, \" name))"
@@ -21,11 +35,8 @@
    "^:hiccup [counter]"
    "(require '[cljs.js :as cljs])\n(fn? cljs/eval-str)"
 
-   "(require '[userland.macros :as macros])
-  (macros/current-ns-str)"
    "(require-macros '[userland.macros-2 :as m2-macros])\n(m2-macros/no-op 2)"
    "(require '[userland.macros-2 :as m2])\n(m2/no-op 2)"
-
    ";; will not work, macros-3 is missing self-require\n(require-macros '[userland.macros-3 :as m3])\n(m3/no-op 3)"
    ])
 

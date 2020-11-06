@@ -5,8 +5,9 @@
                       :output-dir "out/public/js/bootstrap"
                       :entries [reagent.core
                                 cljs.js
-                                userland.macros
-                                userland.macros-3]
+                                userland.core]
+                      :compiler-options
+                      {:warnings {:infer false}}
 
                       ;; many macro namespaces can't be evaluated in ClojureScript -
                       ;; so we exclude them here to avoid runtime errors. Note that
@@ -16,5 +17,6 @@
           :browser {:target :browser
                     :output-dir "out/public/js"
                     :asset-path "/js"
-                    :compiler-options {:optimizations :simple}
+                    :compiler-options {:optimizations :simple
+                                       :warnings {:infer false}}
                     :modules {:base {:init-fn shadow-eval.core/init}}}}}
