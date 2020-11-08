@@ -5,6 +5,9 @@
   (maybe-eval! [this])
   (conj! [this f]))
 
+;; queue for evaluating async functions sequentially.
+;; conj! a function to the queue, it will receive a `done` callback
+;; which must be called for the queue to process a next item.
 (deftype FunctionQueue [^:mutable queue ^:mutable running?]
   IQueue
   (maybe-eval! [this]

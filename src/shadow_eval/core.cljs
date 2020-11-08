@@ -76,6 +76,10 @@
       (tap> x) (cb x))))
 
 (defonce eval-queue (new queue/FunctionQueue #queue[] false))
+<<<<<<< HEAD
+=======
+
+>>>>>>> use queue to eval sequentially
 (defn eval-str [source cb]
   (queue/conj! eval-queue
                (fn [done]
