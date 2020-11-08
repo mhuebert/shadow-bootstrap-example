@@ -3,9 +3,13 @@
  :dev-http {8702 "out/public"}
  :builds {:bootstrap {:target :bootstrap
                       :output-dir "out/public/js/bootstrap"
-                      :entries [reagent.core
+                      :entries [
+                                #_reagent.core
+                                bootstrap-test.reagent
                                 cljs.js
-                                userland.core]
+                                userland.core
+                                bootstrap-test.macros-2
+                                bootstrap-test.macros-3]
                       :compiler-options
                       {:warnings {:infer false}}
 

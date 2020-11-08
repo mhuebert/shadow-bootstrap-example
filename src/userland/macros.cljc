@@ -2,7 +2,7 @@
   (:require [userland.macros-2 :as m2]
 
     ;; removing this ns causes `m2 is not defined` error
-            [userland.both :as b]
+    ;        [userland.both :as b]
 
             )
   #?(:cljs (:require-macros userland.macros)))

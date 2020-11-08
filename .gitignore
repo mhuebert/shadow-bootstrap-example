@@ -6,3 +6,4 @@ out/public/js
 package-lock.json
 .shadow-cljs
 reagent
+scratch

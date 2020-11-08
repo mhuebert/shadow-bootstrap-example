@@ -12,19 +12,33 @@
 ;; Source text to eval
 (def source-examples
   [
-   ;; macro testing
+   ;; fail - expected
+   "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-1 :x)"
 
-   "(require-macros '[userland.macros-2 :as m2-macros])
-    (m2-macros/no-op 2)"
+   ;; fail - cljs bug?
+   "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-2 :x)"
 
-   "(require '[userland.both :as b])
-    (b/hello 1)"
+   ;; success
+   "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-3 :x)"
 
-   "(require '[userland.macros :as macros])
+   ;; success
+   "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-4 :x)"
+
+   ;; fail - shadow bootstrap bug?
+   "(require-macros '[bootstrap-test.macros-3 :as m3])
+  (m3/wrap-3 :x)"
+
+   ;; fail - shadow bootstrap bug?
+   "(require '[bootstrap-test.reagent :as r])
+    (r/with-let [a 1] a)"
+   #_"(require '[userland.macros :as macros])
   (macros/current-ns-str)"
 
-   "(require '[reagent.core :as r])
-    (r/with-let [a 1] a)"]
+   ]
   #_[
    "^:hiccup [:b \"hello, world.\"]"
    "(for [n (range 10)] n)"
@@ -44,6 +58,9 @@
 (defonce c-state (cljs/empty-state))
 (defonce !eval-ready? (r/atom false))
 
+(comment
+  (tap> c-state))
+
 (defn eval-str [source cb]
   (cljs/eval-str
     c-state
@@ -54,7 +71,32 @@
      ;; index.transit.json file to map namespaces to files.
      :load (partial shadow.bootstrap/load c-state)
      :context :expr}
-    cb))
+    (fn [x] (when (:error x)
+              (js/console.error (ex-cause (:error x))))
+      (tap> x) (cb x))))
+
+(comment
+  (defn e [form]
+    (cljs/eval
+      c-state
+      form
+      {:eval cljs/js-eval
+       ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
+       ;; index.transit.json file to map namespaces to files.
+       :load (partial shadow.bootstrap/load c-state)
+       :context :expr}
+      tap>))
+
+  (e '(ns my.test
+        (:require-macros userland.macros-3)))
+  (e '*ns*)
+  (e '(require '[userland.both :as b]))
+  (e '(.-name *ns*))
+  (e '(do (ns my.macros$macros)
+          (defmacro no-op [expr] expr)))
+  (e '(require '[my.macros :as mm]))
+  (e '(mm/no-op 1)))
+
 
 ;; Views
 

@@ -2,5 +2,5 @@
  {thheller/shadow-cljs {:mvn/version "2.11.7"}
   reagent/reagent {:mvn/version "1.0.0-alpha2"}}
  :aliases
- {:local
+ {:local-reagent
   {:override-deps {reagent/reagent {:local/root "reagent"}}}}}
