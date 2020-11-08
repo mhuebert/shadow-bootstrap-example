@@ -4,6 +4,7 @@
     ;; evaluate
     [cljs.js :as cljs]
     [shadow.cljs.bootstrap.browser :as shadow.bootstrap]
+    [shadow-eval.queue :as queue]
 
     ;; view
     [reagent.dom :as rdom]
@@ -40,28 +41,27 @@
 
    ]
   #_[
-   "^:hiccup [:b \"hello, world.\"]"
-   "(for [n (range 10)] n)"
-   "(defn greeting [name] (str \"hello, \" name))"
-   "^:hiccup [greeting \"fido\"]"
-   "(require '[reagent.core :as r] '[reagent.ratom :as ra])"
-   "(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))"
-   "^:hiccup [counter]"
-   "(require '[cljs.js :as cljs])\n(fn? cljs/eval-str)"
+     "^:hiccup [:b \"hello, world.\"]"
+     "(for [n (range 10)] n)"
+     "(defn greeting [name] (str \"hello, \" name))"
+     "^:hiccup [greeting \"fido\"]"
+     "(require '[reagent.core :as r] '[reagent.ratom :as ra])"
+     "(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))"
+     "^:hiccup [counter]"
+     "(require '[cljs.js :as cljs])\n(fn? cljs/eval-str)"
 
-   "(require-macros '[userland.macros-2 :as m2-macros])\n(m2-macros/no-op 2)"
-   "(require '[userland.macros-2 :as m2])\n(m2/no-op 2)"
-   ";; will not work, macros-3 is missing self-require\n(require-macros '[userland.macros-3 :as m3])\n(m3/no-op 3)"
-   ])
+     "(require-macros '[userland.macros-2 :as m2-macros])\n(m2-macros/no-op 2)"
+     "(require '[userland.macros-2 :as m2])\n(m2/no-op 2)"
+     ";; will not work, macros-3 is missing self-require\n(require-macros '[userland.macros-3 :as m3])\n(m3/no-op 3)"
+     ])
 
 ;; Set up eval environment
 (defonce c-state (cljs/empty-state))
 (defonce !eval-ready? (r/atom false))
 
-(comment
-  (tap> c-state))
 
-(defn eval-str [source cb]
+
+(defn eval-str* [source cb]
   (cljs/eval-str
     c-state
     source
@@ -74,6 +74,21 @@
     (fn [x] (when (:error x)
               (js/console.error (ex-cause (:error x))))
       (tap> x) (cb x))))
+
+(defonce eval-queue (new queue/FunctionQueue #queue[] false))
+(defn eval-str [source cb]
+  (queue/conj! eval-queue
+               (fn [done]
+                 (prn source)
+                 (eval-str* source
+                            (fn [result]
+                              (cb result)
+                              (done))))))
+
+(comment
+  (tap> c-state))
+
+
 
 (comment
   (defn e [form]
@@ -119,12 +134,10 @@
        (let [{:keys [error value]} result]
          [:div.pre-wrap
           (if error
-            (do
-              (js/console.error (ex-cause error))
-              [:div.pa3.bg-washed-red
-               [:div.b (ex-message error)]
-               [:div (str (ex-data error))]
-               (pr-str (ex-cause error))])
+            [:div.pa3.bg-washed-red
+             [:div.b (ex-message error)]
+             [:div (str (ex-data error))]
+             (pr-str (ex-cause error))]
             [:div.pa3
              (if (and (vector? value) (:hiccup (meta value)))
                value
@@ -145,6 +158,6 @@
 (defn ^:dev/after-load init []
   (shadow.bootstrap/init c-state
                          {:path "/js/bootstrap"
-              :load-on-init '#{shadow-eval.user}}
+                          :load-on-init '#{shadow-eval.user}}
                          #(reset! !eval-ready? true))
   (render))
