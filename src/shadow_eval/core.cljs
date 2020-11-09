@@ -11,31 +11,34 @@
     [reagent.core :as r]))
 
 ;; Source text to eval
-(def source-examples
-  [
-   ;; fail - expected
-   "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-1 :x)"
-
+(def examples
+  [{:doc "the macro-ns `bootstrap-test.wrap-1` is never required with :require-macros"
+    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-1 :x)"}
    ;; fail - cljs bug?
-   "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-2 :x)"
+   {:doc "fail - the macro ns `bootstrap-test.macros-2` is only included in :require-macros, cannot be resolved. probably a bug in cljs?"
+    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-2 :x)"}
 
    ;; success
-   "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-3 :x)"
+   {:doc "succeeds - the macro-ns is :require'd and also self-requires"
+    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-3 :x)"}
 
    ;; success
-   "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-4 :x)"
+   {:doc "succeeds - same as above but with separate cljs + cljc namespaces"
+    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
+  (m2/wrap-4 :x)"}
 
    ;; fail - shadow bootstrap bug?
-   "(require-macros '[bootstrap-test.macros-3 :as m3])
-  (m3/wrap-3 :x)"
+   {:doc "fail - the macros-3 ns is in cljs + cljc namespaces - shadow bootstrap bug? "
+    :source "(require-macros '[bootstrap-test.macros-3 :as m3])
+  (m3/wrap-3 :x)"}
 
    ;; fail - shadow bootstrap bug?
-   "(require '[bootstrap-test.reagent :as r])
-    (r/with-let [a 1] a)"
+   {:doc "fail - likely same cause as above - cannot use reagent macros"
+    :source "(require '[reagent.core :as r])
+    (r/with-let [a 1] a)"}
    #_"(require '[userland.macros :as macros])
   (macros/current-ns-str)"
 
@@ -61,100 +64,75 @@
 
 
 
-(defn eval-str* [source cb]
-  (cljs/eval-str
-    c-state
-    source
-    "[test]"
-    {:eval cljs/js-eval
-     ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
-     ;; index.transit.json file to map namespaces to files.
-     :load (partial shadow.bootstrap/load c-state)
-     :context :expr}
-    (fn [x] (when (:error x)
-              (js/console.error (ex-cause (:error x))))
-      (tap> x) (cb x))))
+(defn eval* [source cb]
+  (let [options {:eval cljs/js-eval
+                 ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
+                 ;; index.transit.json file to map namespaces to files.
+                 :load (partial shadow.bootstrap/load c-state)
+                 :context :expr}
+        f (fn [x] (when (:error x)
+                     (js/console.error (ex-cause (:error x))))
+             (tap> x) (cb x))]
+    (cljs/eval-str c-state (str source) "[test]" options f)))
 
 (defonce eval-queue (new queue/FunctionQueue #queue[] false))
 
-(defn eval-str [source cb]
+(defn eval! [source cb]
   (queue/conj! eval-queue
                (fn [done]
-                 (prn source)
-                 (eval-str* source
-                            (fn [result]
+                 (eval* source
+                        (fn [result]
                               (cb result)
                               (done))))))
 
 (comment
   (tap> c-state))
 
-
-
-(comment
-  (defn e [form]
-    (cljs/eval
-      c-state
-      form
-      {:eval cljs/js-eval
-       ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
-       ;; index.transit.json file to map namespaces to files.
-       :load (partial shadow.bootstrap/load c-state)
-       :context :expr}
-      tap>))
-
-  (e '(ns my.test
-        (:require-macros userland.macros-3)))
-  (e '*ns*)
-  (e '(require '[userland.both :as b]))
-  (e '(.-name *ns*))
-  (e '(do (ns my.macros$macros)
-          (defmacro no-op [expr] expr)))
-  (e '(require '[my.macros :as mm]))
-  (e '(mm/no-op 1)))
-
-
 ;; Views
 
-(defn show-example
+(defn example-view
   "Shows a single example, with an editable textarea and value-view."
-  [source]
+  [{:keys [source doc]}]
   (r/with-let [!state (r/atom {:source source})
-               _ (eval-str source (partial swap! !state assoc :result))]
-    (let [{:keys [source result]} @!state]
-      [:div.ma3.flex
-       [:div.bg-near-white.pa3.flex-none
-        {:style {:width 450}}
-        [:textarea.bn.pre.w-100.f6.lh-copy.bg-near-white.outline-0.monospace.overflow-auto
-         {:value (:source @!state)
-          :style {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source)))) "rem")}
-          :on-change #(let [source (.. % -target -value)]
-                        (swap! !state assoc :source source)
-                        (eval-str source (partial swap! !state assoc :result)))}]]
+               _ (eval! source (partial swap! !state assoc :result))]
+    (let [{:keys [source result]} @!state
+          source-str (str source)]
+      [:div.mb5.mt2
 
-       (let [{:keys [error value]} result]
-         [:div.pre-wrap
-          (if error
-            [:div.pa3.bg-washed-red
-             [:div.b (ex-message error)]
-             [:div (str (ex-data error))]
-             (pr-str (ex-cause error))]
-            [:div.pa3
-             (if (and (vector? value) (:hiccup (meta value)))
-               value
-               (pr-str value))])])])))
+       [:div.flex
+        [:div.bg-near-white.pa3.flex-none
+         {:style {:width 450}}
+         [:textarea.bn.pre-wrap.w-100.f7.lh-copy.bg-near-white.outline-0.code.overflow-auto
+          {:value (str source-str)
+           :style {:height (str (+ 1.75 (* 1.3125 (count (re-seq #"\n|\r\n" source-str)))) "rem")}
+           :on-change #(let [next-source (.. % -target -value)]
+                         (swap! !state assoc :source next-source)
+                         (eval! next-source (partial swap! !state assoc :result)))}]]
 
-(defn examples
+        (let [{:keys [error value]} result]
+          [:div.pre-wrap
+           (if error
+             [:div.pa3.bg-washed-red
+              [:div.b (ex-message error)]
+              [:div (str (ex-data error))]
+              (pr-str (ex-cause error))]
+             [:div.pa3
+              (if (and (vector? value) (:hiccup (meta value)))
+                value
+                (pr-str value))])])]
+       (when doc [:div.mh3.mv2 doc])])))
+
+(defn examples-view
   "Root view for the page"
   []
   (if @!eval-ready?
     (into [:div.monospace.f6]
-          (for [source source-examples]
-            ^{:key source} [show-example source]))
+          (for [example examples]
+            ^{:key (:source example)} [example-view example]))
     "Loading..."))
 
 (defn render []
-  (rdom/render [examples] (js/document.getElementById "shadow-eval")))
+  (rdom/render [examples-view] (js/document.getElementById "shadow-eval")))
 
 (defn ^:dev/after-load init []
   (shadow.bootstrap/init c-state
