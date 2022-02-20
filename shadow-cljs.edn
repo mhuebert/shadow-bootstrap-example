@@ -11,8 +11,10 @@
                                 bootstrap-test.macros-2
                                 bootstrap-test.macros-3]
                       :compiler-options
-                      {:warnings {:infer false}}
-
+                      {:infer-externs false
+                       :warnings {:infer false
+                                  :infer-warning false}}
+                      :devtools {:ignore-warnings true}
                       ;; many macro namespaces can't be evaluated in ClojureScript -
                       ;; so we exclude them here to avoid runtime errors. Note that
                       ;; it's ok to include code that consumes Clojure (jvm) macros,
@@ -21,6 +23,9 @@
           :browser {:target :browser
                     :output-dir "out/public/js"
                     :asset-path "/js"
-                    :compiler-options {:optimizations :simple
-                                       :warnings {:infer false}}
+                    :devtools {:ignore-warnings true}
+                    :compiler-options {:infer-externs false
+                                       :optimizations :simple
+                                       :warnings {:infer false
+                                                  :infer-warning false}}
                     :modules {:base {:init-fn shadow-eval.core/init}}}}}

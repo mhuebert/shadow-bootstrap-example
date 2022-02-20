@@ -12,11 +12,14 @@
 
 ;; Source text to eval
 (def examples
-  [{:doc "the macro-ns `bootstrap-test.wrap-1` is never required with :require-macros"
+  [{:doc "fail - the macros-3 ns is in cljs + cljc namespaces - shadow bootstrap bug? "
+    :source "(require-macros '[bootstrap-test.macros-3 :as m3])
+  (m3/wrap-3 :x)"}]
+  #_[{:doc "expected: the macro-ns `bootstrap-test.wrap-1` is never required with :require-macros"
     :source "(require-macros '[bootstrap-test.macros-2 :as m2])
   (m2/wrap-1 :x)"}
    ;; fail - cljs bug?
-   {:doc "fail - the macro ns `bootstrap-test.macros-2` is only included in :require-macros, cannot be resolved. probably a bug in cljs?"
+   {:doc "fail: from within a macros-ns, :require-macros is not sufficient to expose other macros. bug?"
     :source "(require-macros '[bootstrap-test.macros-2 :as m2])
   (m2/wrap-2 :x)"}
 
@@ -66,6 +69,7 @@
 
 (defn eval* [source cb]
   (let [options {:eval cljs/js-eval
+                 :verbose true
                  ;; use the :load function provided by shadow-cljs, which uses the bootstrap build's
                  ;; index.transit.json file to map namespaces to files.
                  :load (partial shadow.bootstrap/load c-state)
@@ -82,6 +86,8 @@
                (fn [done]
                  (eval* source
                         (fn [result]
+                            (prn :source source)
+                            (prn :result result)
                               (cb result)
                               (done))))))
 
