@@ -12,54 +12,10 @@
 
 ;; Source text to eval
 (def examples
-  [{:doc "fail - the macros-3 ns is in cljs + cljc namespaces - shadow bootstrap bug? "
-    :source "(require-macros '[bootstrap-test.macros-3 :as m3])
-  (m3/wrap-3 :x)"}]
-  #_[{:doc "expected: the macro-ns `bootstrap-test.wrap-1` is never required with :require-macros"
-    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-1 :x)"}
-   ;; fail - cljs bug?
-   {:doc "fail: from within a macros-ns, :require-macros is not sufficient to expose other macros. bug?"
-    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-2 :x)"}
-
-   ;; success
-   {:doc "succeeds - the macro-ns is :require'd and also self-requires"
-    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-3 :x)"}
-
-   ;; success
-   {:doc "succeeds - same as above but with separate cljs + cljc namespaces"
-    :source "(require-macros '[bootstrap-test.macros-2 :as m2])
-  (m2/wrap-4 :x)"}
-
-   ;; fail - shadow bootstrap bug?
-   {:doc "fail - the macros-3 ns is in cljs + cljc namespaces - shadow bootstrap bug? "
-    :source "(require-macros '[bootstrap-test.macros-3 :as m3])
-  (m3/wrap-3 :x)"}
-
-   ;; fail - shadow bootstrap bug?
-   {:doc "fail - likely same cause as above - cannot use reagent macros"
-    :source "(require '[reagent.core :as r])
-    (r/with-let [a 1] a)"}
-   #_"(require '[userland.macros :as macros])
-  (macros/current-ns-str)"
-
-   ]
-  #_[
-     "^:hiccup [:b \"hello, world.\"]"
-     "(for [n (range 10)] n)"
-     "(defn greeting [name] (str \"hello, \" name))"
-     "^:hiccup [greeting \"fido\"]"
-     "(require '[reagent.core :as r] '[reagent.ratom :as ra])"
-     "(defn counter []\n  (let [i (r/atom 0)\n        interval (js/setInterval #(swap! i inc) 500)]\n    (ra/add-on-dispose! reagent.ratom/*ratom-context* #(js/clearInterval interval))\n    (fn [] [:div @i])))"
-     "^:hiccup [counter]"
-     "(require '[cljs.js :as cljs])\n(fn? cljs/eval-str)"
-
-     "(require-macros '[userland.macros-2 :as m2-macros])\n(m2-macros/no-op 2)"
-     "(require '[userland.macros-2 :as m2])\n(m2/no-op 2)"
-     ";; will not work, macros-3 is missing self-require\n(require-macros '[userland.macros-3 :as m3])\n(m3/no-op 3)"
-     ])
+  [{:doc "fail - the macros ns is in cljs + cljc namespaces "
+    :source "(require-macros '[bootstrap-test.macros :as macros])
+             (macros/wrap :x)"}]
+  )
 
 ;; Set up eval environment
 (defonce c-state (cljs/empty-state))

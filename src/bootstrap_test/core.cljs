@@ -7,4 +7,4 @@
 ;; You must not remove this notice, or any other, from this software.
 
 (ns bootstrap-test.core
-  (:require-macros bootstrap-test.macros-2))
+  (:require-macros bootstrap-test.macros))
